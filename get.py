@@ -2,7 +2,6 @@
 import csv
 import urllib2
 from bs4 import BeautifulSoup
-import sys
 
 data = []
 mail_mix_str = "http://webshop.mailmix.nl/catalog/category/"
@@ -41,7 +40,7 @@ def products_loop(url):
         # article_number = ''
         # if check_article_number is not None:
         #     article_number = check_article_number.text
-        print(image_src)
+        print(item_title)
         data.append([
             product_desc,
             image_src,
@@ -57,19 +56,16 @@ def products_loop(url):
 def get_products(url):
     this_page = url_parser(url)
     #initial first page
-    print('===== Now on page 1')
     products_loop(url)
-
-    if this_page.find('div', {'class': 'pages'}):
-        pages = this_page.find('div', {'class': 'pages'}).find_all('li')
+    if this_page.find('div', {'class': 'pages'}) is not None:
+        pages = this_page.find('div', {'class': 'pages'}).find_all('a')
         stage = 0
         for page in pages:
-            stage = + 1
+            stage = stage + 1
             # skip using href in first loop
             if stage >= 2:
-                current_page_url = page.find('a')['href']
+                current_page_url = page['href']
                 products_loop(current_page_url)
-                print('===== Now on page ' + stage)
 
 
 for category in my_categories:
@@ -100,5 +96,6 @@ for category in my_categories:
     print('----------------')
 
 with open('mailmix.csv', 'wb') as csv_file:
-    writer = csv.writer(csv_file)
-writer.writerow(data)
+    writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
+    for row in data:
+        writer.writerow(row)
