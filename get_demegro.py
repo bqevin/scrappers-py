@@ -38,24 +38,32 @@ for category in my_categories:
             for under_sub in under_sub_cat:
                 under_sub_href = under_sub.text.strip()
                 under_sub_href = sub_href + '/' + under_sub_href
-                print(under_sub_href)
+                # print(under_sub_href)
                 product_content = url_parser(under_sub_href)
                 products = product_content.find_all('div', {'class': 'article'})
+                brand_name = product_content.find('label')
+                if brand_name is not None:
+                    brand_name = brand_name.text.strip()
                 for product in products:
                     product_title = product.find('h2').text.strip()
-                    article_number = product.find('span', {'class': 'code rightclick'}).text.strip()
-                    fabric_code = product.find('span', {'class': 'rightclick'}).text.strip()
-                    print(fabric_code)
-                    # data.append([
-                    #     product_title,
-                    #     image_src,
-                    #     fabric_code,
-                    #     article_number,
-                    #     brand_name,
-                    #     cat_title,
-                    #     sub_title,
-                    #     under_title
-                    # ])
+                    article_number_element = product.find('span', {'class': 'code'})
+                    article_number = article_number_element.text.strip()
+                    fabric_code = article_number_element.find_next_siblings('span', {'class': 'code'})[0].find('span', {'class': 'rightclick'})
+                    if fabric_code is not None:
+                        fabric_code = fabric_code.text.strip()
+                    image_src = product.find('div', {'class': 'imgHolder'}).find('img')
+                    if image_src is not None:
+                        image_src = image_src['src']
+                    print(product_title)
+                    data.append([
+                        product_title,
+                        image_src,
+                        fabric_code,
+                        article_number,
+                        brand_name,
+                        cat_title,
+                        sub_title,
+                    ])
 
 
 with open('demegro.csv', 'wb') as csv_file:
