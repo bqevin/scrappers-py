@@ -13,9 +13,39 @@ def url_parser(url):
     url = url.replace(' ', '%20')
     req = urllib2.Request(url, headers=hdr)
     content = urllib2.urlopen(req)
-
     soup = BeautifulSoup(content, 'html.parser')
     return soup
+
+
+def get_product(product_url, product_img):
+    item_content = url_parser(product_url)
+    product_title = item_content.find('div', {'class': 'product-name'}).find('h1').text.strip()
+    image_src = product_img
+    brand_name = ''
+    article_number = ''
+    article_number_dental_union = ''
+    fabric_code = ''
+    extra_info = item_content.find('table', {'id': 'product-attribute-specs-table'}).find_all('tr')
+    for single_row in extra_info:
+        row_title = single_row.find('th').text.strip()
+        if row_title == 'Bestelnummer':
+            article_number = single_row.find('td').text.strip()
+        if row_title == 'Leverancier':
+            brand_name = single_row.find('td').text.strip()
+        if row_title == 'Artnr. Dental Union':
+            article_number_dental_union = single_row.find('td').text.strip()
+        if row_title == 'Artnr. Fabrikant':
+            fabric_code = single_row.find('td').text.strip()
+    print(product_title)
+    data.append([
+        product_title,
+        image_src,
+        fabric_code,
+        article_number,
+        brand_name,
+        article_number_dental_union,
+        cat_title
+    ])
 
 
 def loop_products_page(url):
@@ -23,20 +53,14 @@ def loop_products_page(url):
     products = product_content.find_all('li', {'class': 'item'})
     for product in products:
         product_href = product.find('a')['href']
+        product_img = product.find('a', {'class': 'product-image'}).find('img')
+        if product_img is not None:
+            product_img = product_img['src']
         # skip ads
         if product_href == '/speciaal':
             continue
-        print('--' + product_href)
         # get products
-        # data.append([
-        #     product_title,
-        #     image_src,
-        #     fabric_code,
-        #     article_number,
-        #     brand_name,
-        #     cat_title,
-        #     sub_title,
-        # ])
+        get_product(product_href, product_img)
 
 
 def lookup_pages(url):
