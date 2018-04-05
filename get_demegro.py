@@ -44,13 +44,16 @@ for category in my_categories:
                 brand_name = product_content.find('label')
                 if brand_name is not None:
                     brand_name = brand_name.text.strip()
+                    brand_name.encode('ascii', 'ignore').decode('ascii')
                 for product in products:
                     product_title = product.find('h2').text.strip()
+                    product_title.encode('ascii', 'ignore').decode('ascii')
                     article_number_element = product.find('span', {'class': 'code'})
                     article_number = article_number_element.text.strip()
                     fabric_code = article_number_element.find_next_siblings('span', {'class': 'code'})[0].find('span', {'class': 'rightclick'})
                     if fabric_code is not None:
                         fabric_code = fabric_code.text.strip()
+                        fabric_code.encode('ascii', 'ignore').decode('ascii')
                     image_src = product.find('div', {'class': 'imgHolder'}).find('img')
                     if image_src is not None:
                         image_src = image_src['src']
@@ -66,7 +69,7 @@ for category in my_categories:
                     ])
 
 
-with open('demegro.csv', 'wb') as csv_file:
+with open('d_.csv', 'wb') as csv_file:
     writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
     for row in data:
         writer.writerow(row)
