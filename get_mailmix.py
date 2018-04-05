@@ -57,7 +57,7 @@ def get_products(url):
         pages = this_page.find('div', {'class': 'pages'}).find_all('a')
         stage = 0
         for page in pages:
-            stage = stage + 1
+            stage += 1
             # skip crawling 1st page URL again
             if stage >= 2:
                 current_page_url = page['href']

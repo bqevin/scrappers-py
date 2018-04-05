@@ -39,6 +39,21 @@ def loop_products_page(url):
         # ])
 
 
+def lookup_pages(url):
+    page_content = url_parser(url)
+    other_page = page_content.find('a', {'class': 'next i-next'})
+    if other_page:
+        loop_products_page(other_page['href'])
+        lookup_pages(other_page['href'])
+
+
+def per_page_products(current_url):
+    #first page in category
+    loop_products_page(current_url)
+    #see pages
+    lookup_pages(current_url)
+
+
 # main homepage
 html_content = url_parser(dental_union_str)
 my_categories = html_content.find_all("li", {"class": "item"})
@@ -48,17 +63,7 @@ for category in my_categories:
     cat_title = category.text.strip()
     cat_href = dental_union_str + category.find('a')['href']
     print(cat_title)
-    loop_products_page(cat_href)
-    cat_content = url_parser(cat_href)
-    pages = cat_content.find('div', {'class': 'pages'})
-    if pages:
-        pages_links = pages.find_all('li')
-        stage = 0
-        for page_link in pages_links:
-            stage = stage + 1
-            if stage >= 2:
-                page_href = page_link.find('a')['href']
-                loop_products_page(page_href)
+    per_page_products(cat_href)
 
 with open('dental_union.csv', 'wb') as csv_file:
     writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
