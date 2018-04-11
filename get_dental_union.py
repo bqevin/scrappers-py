@@ -103,4 +103,7 @@ for category in my_categories:
 with open('dental_union.csv', 'wb') as csv_file:
     writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
     for row in data:
-        writer.writerow(row)
+        try:
+            writer.writerow(row)
+        except Exception:
+            pass

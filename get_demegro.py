@@ -69,7 +69,7 @@ for category in my_categories:
                     ])
 
 
-with open('d_.csv', 'wb') as csv_file:
+with open('demegro.csv', 'wb') as csv_file:
     writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
     for row in data:
         try:

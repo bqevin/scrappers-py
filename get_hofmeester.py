@@ -4,7 +4,7 @@ import urllib2
 from bs4 import BeautifulSoup
 
 data = []
-adt_str = "https://adt.nl/catalog"
+hofmeester_str = "https://www.hofmeester.nl"
 
 
 # calls any url and return as bs4 element
@@ -80,17 +80,19 @@ def url_parser(url):
 
 
 # main homepage
-html_content = url_parser(adt_str)
-menu = html_content.find('ul', {'class': 'menu--category'})
-my_categories = menu.find_all('li', {'class': 'hasDropdown'})
+html_content = url_parser(hofmeester_str)
 
+menu = html_content.find('ul', {'class': 'main-menu'})
+print(menu)
+my_categories = menu.find_all('li', {'class': 'has-child'})
+# print(my_categories)
 for category in my_categories:
-    cat_title = category.find_all('a')[0].text.strip()
+    cat_title = category.find('a').text
     # cat_href = cat_title['href']
     print(cat_title)
 
 
-with open('adt.csv', 'wb') as csv_file:
+with open('hofmeester.csv', 'wb') as csv_file:
     writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
     for row in data:
         writer.writerow(row)
