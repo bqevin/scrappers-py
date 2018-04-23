@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+# encoding=utf8
 import csv
 import urllib2
 from bs4 import BeautifulSoup
 import requests
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 data = []
 inkoopwijzers_str = "https://www.inkoopwijzers.nl/producten"
@@ -63,27 +67,26 @@ for cat in fetch_titles(inkoopwijzers_str):
                                                 })
                 content_table = parse_content(product_content.text).find('table', {'class': 'text'})
                 if content_table:
-                    for product in content_table.find_all('tr'):
-                        item_title = product.find('td', {'class': 'titel2'})
-                        item_code = product.find('td', {'class': 'code'})
-                        item_amount = product.find('td', {'class': 'aantal'})
+                    for row in content_table.find_all('tr'):
+                        item_title = row.find('td', {'class': 'titel2'})
+                        item_code = row.find('td', {'class': 'code'})
+                        item_amount = row.find('td', {'class': 'aantal'})
                         article_number = ''
                         product_title = ''
                         product_amount = ''
-                        if item_title:
+                        if item_title and item_code and item_amount:
                             product_title = item_title.text.strip()
-                        if item_code:
-                            fabric_code = item_code.text.strip()
-                        if item_amount:
+                            article_number = item_code.text.strip()
                             product_amount = item_amount.text.strip()
-                        data.append([
-                            product_title,
-                            article_number,
-                            product_amount,
-                            brand_title,
-                            cat_title,
-                            sub_title
-                        ])
+                            print('Product Title: {}, Article Code: {}, Amount: {}'.format(product_title, article_number, product_amount))
+                            data.append([
+                                product_title,
+                                article_number,
+                                product_amount,
+                                brand_title,
+                                cat_title,
+                                sub_title
+                            ])
 
     print('=================================')
 
