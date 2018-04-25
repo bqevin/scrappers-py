@@ -31,22 +31,35 @@ def clean_url(url):
     return url.replace(' ', '%20')
 
 
+def loop_cat_tables(url):
+    page_content = url_parser(aera_online_str + url)
+    important_content = page_content.find('table', {'class': 'ContentContainerTransparent'})
+    product_content = page_content.find('div', {'class': 'objTabelle2'})
+    if product_content:
+        product_content = product_content.find('table')
+        product_content = product_content.find('tbody')
+        print(product_content)
+        # for rows in product_content.find_all('tr'):
+        #         details = rows.select('td:nth-of-type(1)')
+        #         product_title = details.find('a', {'class': 'LinkProduct'}).text.strip()
+        #         print('===== {}'.format(product_title))
+    #TODO: recurse if pages
+    if important_content:
+        important_content = page_content.find('tbody')
+        if important_content:
+            for row_ in important_content.find_all('tr', {'class': 'ContentContainerTransparent'}):
+                for col in row_.find_all('td'):
+                    if col.find('a') is None:
+                        continue
+                    title = col.text.strip()
+                    href = col.find('a')
+                    if href is not None:
+                        href = href['href']
+                    print('--> {}'.format(title, href))
+                    loop_cat_tables(href)
+
+
 html_content = url_parser(aera_online_catalog).find('table', {'class': 'ContentContainerTransparent'}).find('tbody')
-
-
-# def fetch_titles(url):
-#     page_content = url_parser(aera_online_str + url).find('table', {'class': 'ContentContainerTransparent'}).find(
-#         'tbody')
-#     for row_ in page_content.find_all('tr', {'class': 'ContentContainerTransparent'}):
-#         for col in row_.find_all('td'):
-#             title = col.text.strip()
-#             href = col.find('a')
-#             if href is not None:
-#                 href = href['href']
-#             print('Title: {} ==> {}'.format(title, href))
-#             return '{} {}'.format(title, href)
-
-
 for row in html_content.find_all('tr', {'class': 'ContentContainerTransparent'}):
     for cat in row.find_all('td'):
         if cat.find('a') is None:
@@ -55,21 +68,11 @@ for row in html_content.find_all('tr', {'class': 'ContentContainerTransparent'})
         cat_href = cat.find('a')
         if cat_href is not None:
             cat_href = cat_href['href']
-
         print('---------------------------------')
         print('Category: {}'.format(cat_title))
         print('---------------------------------')
-        page_content = url_parser(aera_online_str + cat_href).find('table', {'class': 'ContentContainerTransparent'})
-        if page_content:
-            for row_ in page_content.find('tbody').find_all('tr', {'class': 'ContentContainerTransparent'}):
-                for col in row_.find_all('td'):
-                    if col.find('a') is None:
-                        continue
-                    title = col.text.strip()
-                    href = col.find('a')
-                    if href is not None:
-                        href = href['href']
-                    print('--> {}'.format(title))
+        #TODO: Before looking for table, check if products are there already. Need a recursive here
+        loop_cat_tables(cat_href)
 
     #     print('-> {}'.format(sub_title))
     #     for brand in fetch_titles(sub_href):
