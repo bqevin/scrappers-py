@@ -12,6 +12,9 @@ sys.setdefaultencoding('utf8')
 data = []
 aera_online_str = "https://www.aera-online.de"
 aera_online_catalog = "https://www.aera-online.de/Asps/Katalog.asp"
+login_action = "https://www.aera-online.de/Asps/Anmelden.asp"
+form_username = "pBenutzer"
+form_password = "pKennwort"
 
 
 # calls any url and return as bs4 element
@@ -31,35 +34,94 @@ def clean_url(url):
     return url.replace(' ', '%20')
 
 
-def loop_cat_tables(url):
-    page_content = url_parser(aera_online_str + url)
-    important_content = page_content.find('table', {'class': 'ContentContainerTransparent'})
-    product_content = page_content.find('div', {'class': 'objTabelle2'})
+payload = {
+    form_username: 'orthoamstelveen',
+    form_password: 'Ortho2020',
+}
+session = requests.Session()
+session.get(login_action)
+session.post(login_action, data=payload,
+            headers={
+                'X-Requested-With': 'XMLHttpRequest',
+                'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6',
+                'referer': clean_url(aera_online_str+'/Default.asp')
+            })
+
+
+def single_product(url):
+    page_content = session.get(clean_url(aera_online_str + url))
+    page_content = parse_content(page_content.text).find('div', {'class': 'objFormularInlineRand'})
+    if page_content:
+        _title = page_content.find('div', {'class': 'objFormularTitel'})
+        brand_fabric = page_content.find('td', {'class': 'objFormularInhalt1'})
+        brand_name = ''
+        fabric_code = ''
+        product_title = ''
+        if brand_fabric:
+            brand_fabric = brand_fabric.text.strip()
+            try:
+                brand_name = brand_fabric.split(',')[0]
+            except IndexError:
+                brand_name = ''
+            try:
+                fabric_code = brand_fabric.split(':')[1]
+            except IndexError:
+                fabric_code = ''
+        if _title:
+            product_title = _title.text.strip()
+        print('Product: {}, Brand: {}, Fabric Code: {}'.format(product_title, brand_name, fabric_code))
+        # print(page_content.find('td', {'class': 'PageHeadRightSearchBarCatalogueContainer'}).find('a')['href'])
+        # for row_ in page_content.find_all('tr', {'class': 'objTabelle2'}):
+        #     final_href = row_.find('td').find('a')
+        #     if final_href:
+        #         final_href = final_href['href']
+        #         final_content = url_parser(aera_online_str + final_href).find('div', {'class': 'ContentContainer'})
+        #         print(final_content)
+        # print('Product Title: {}, Article Code: {}, Amount: {}'.format(product_title, article_number, product_amount))
+        # data.append([
+        #     product_title,
+        #     article_number,
+        #     product_amount,
+        #     brand_title,
+        #     cat_title,
+        #     sub_title
+        # ])
+
+
+def loop_products_list(url):
+    product_content = url_parser(aera_online_str + url).find('div', {'class': 'objTabelle2'})
+    product_content.find('table').find('tbody')
     if product_content:
-        product_content = product_content.find('table')
-        product_content = product_content.find('tbody')
-        print(product_content)
-        # for rows in product_content.find_all('tr'):
-        #         details = rows.select('td:nth-of-type(1)')
-        #         product_title = details.find('a', {'class': 'LinkProduct'}).text.strip()
-        #         print('===== {}'.format(product_title))
-    #TODO: recurse if pages
-    if important_content:
-        important_content = page_content.find('tbody')
+        for row_ in product_content.find_all('tr', {'class': 'objTabelle2'}):
+            product_href = row_.find('td').find('a')
+            product_title = product_href.find('img')
+            if product_href:
+                product_title = product_title['title']
+                product_href = product_href['href']
+                single_product(product_href)
+
+
+def loop_cat_tables(url):
+    _content = url_parser(aera_online_str + url).find('table', {'class': 'ContentContainerTransparent'})
+    if _content:
+        important_content = _content.find('tbody')
         if important_content:
-            for row_ in important_content.find_all('tr', {'class': 'ContentContainerTransparent'}):
-                for col in row_.find_all('td'):
-                    if col.find('a') is None:
+            for _row in important_content.find_all('tr', {'class': 'ContentContainerTransparent'}):
+                for _col in _row.find_all('td'):
+                    if _col.find('a') is None:
                         continue
-                    title = col.text.strip()
-                    href = col.find('a')
-                    if href is not None:
-                        href = href['href']
-                    print('--> {}'.format(title, href))
-                    loop_cat_tables(href)
+                    _title = _col.text.strip()
+                    _href = _col.find('a')
+                    if _href is not None:
+                        _href = _href['href']
+                    print('--> {} : {}'.format(_title, _href))
+                    loop_cat_tables(_href)
+    else:
+        loop_products_list(url)
 
 
-html_content = url_parser(aera_online_catalog).find('table', {'class': 'ContentContainerTransparent'}).find('tbody')
+html_content = url_parser(aera_online_catalog)
+html_content = html_content.find('table', {'class': 'ContentContainerTransparent'}).find('tbody')
 for row in html_content.find_all('tr', {'class': 'ContentContainerTransparent'}):
     for cat in row.find_all('td'):
         if cat.find('a') is None:
@@ -71,54 +133,9 @@ for row in html_content.find_all('tr', {'class': 'ContentContainerTransparent'})
         print('---------------------------------')
         print('Category: {}'.format(cat_title))
         print('---------------------------------')
-        #TODO: Before looking for table, check if products are there already. Need a recursive here
         loop_cat_tables(cat_href)
 
-    #     print('-> {}'.format(sub_title))
-    #     for brand in fetch_titles(sub_href):
-    #         brand_title = brand.text.strip().split('(')[0]
-    #         brand_href = brand['href']
-    #         print('=== {}'.format(brand_title))
-    #         for link in fetch_titles(brand_href):
-    #             products_sort = link.text.strip().split('(')[0]
-    #             products_href = link['href']
-    #             payload = {
-    #                 'hoofdstuk': cat_title,
-    #                 'categorie': sub_title,
-    #                 'fabrikant': brand_title,
-    #                 'productsoort': products_sort,
-    #                 'limiet': limit,
-    #             }
-    #             product_content = requests.post(ajax_post_url,
-    #                                             data=payload,
-    #                                             headers={
-    #                                                 'X-Requested-With': 'XMLHttpRequest',
-    #                                                 'referer': clean_url(products_href)
-    #                                             })
-    #             content_table = parse_content(product_content.text).find('table', {'class': 'text'})
-    #             if content_table:
-    #                 for row in content_table.find_all('tr'):
-    #                     item_title = row.find('td', {'class': 'titel2'})
-    #                     item_code = row.find('td', {'class': 'code'})
-    #                     item_amount = row.find('td', {'class': 'aantal'})
-    #                     article_number = ''
-    #                     product_title = ''
-    #                     product_amount = ''
-    #                     if item_title and item_code and item_amount:
-    #                         product_title = item_title.text.strip()
-    #                         article_number = item_code.text.strip()
-    #                         product_amount = item_amount.text.strip()
-    #                         print('Product Title: {}, Article Code: {}, Amount: {}'.format(product_title, article_number, product_amount))
-    #                         data.append([
-    #                             product_title,
-    #                             article_number,
-    #                             product_amount,
-    #                             brand_title,
-    #                             cat_title,
-    #                             sub_title
-    #                         ])
-
-    # print('=================================')
+    print('=================================')
 
 with open('aera_online.csv', 'wb') as csv_file:
     writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
