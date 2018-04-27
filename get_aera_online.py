@@ -49,14 +49,19 @@ session.post(login_action, data=payload,
 
 
 def single_product(url):
-    page_content = session.get(clean_url(aera_online_str + url))
-    page_content = parse_content(page_content.text).find('div', {'class': 'objFormularInlineRand'})
+    main_page_content = session.get(clean_url(aera_online_str + url))
+    page_content = parse_content(main_page_content.text).find('div', {'class': 'objFormularInlineRand'})
     if page_content:
         _title = page_content.find('div', {'class': 'objFormularTitel'})
-        brand_fabric = page_content.find('td', {'class': 'objFormularInhalt1'})
+        td = page_content.find_all('td', {'class': 'objFormularInhalt1'})
+        brand_fabric = td[0]
+        category = td[1]
         brand_name = ''
         fabric_code = ''
         product_title = ''
+        category_title = ''
+        if category:
+            category_title = category.text.strip().split('\\')[2]
         if brand_fabric:
             brand_fabric = brand_fabric.text.strip()
             try:
@@ -69,23 +74,26 @@ def single_product(url):
                 fabric_code = ''
         if _title:
             product_title = _title.text.strip()
-        print('Product: {}, Brand: {}, Fabric Code: {}'.format(product_title, brand_name, fabric_code))
-        # print(page_content.find('td', {'class': 'PageHeadRightSearchBarCatalogueContainer'}).find('a')['href'])
-        # for row_ in page_content.find_all('tr', {'class': 'objTabelle2'}):
-        #     final_href = row_.find('td').find('a')
-        #     if final_href:
-        #         final_href = final_href['href']
-        #         final_content = url_parser(aera_online_str + final_href).find('div', {'class': 'ContentContainer'})
-        #         print(final_content)
-        # print('Product Title: {}, Article Code: {}, Amount: {}'.format(product_title, article_number, product_amount))
-        # data.append([
-        #     product_title,
-        #     article_number,
-        #     product_amount,
-        #     brand_title,
-        #     cat_title,
-        #     sub_title
-        # ])
+        #find the henry schein loop
+        for competitor in parse_content(main_page_content.text).find('div', {'class': 'objKarteiInhalt'}).find_all('tr', {'class': 'objTabelle2Block'}):
+            text_data = competitor.find('td', {'class': 'objTabelle2BlockLinks'}).text.strip()
+            if "Henry Schein Dental Depot GmbH" in text_data:
+                href_data = competitor.find('td', {'class': 'objTabelle2BlockRechts'})
+                href_data = href_data.find('a')['href']
+                hc_content = parse_content(session.get(clean_url(aera_online_str + href_data)).text)
+                hc_content = hc_content.find('table', {'class': 'objFormular'})
+                for hc_row in hc_content.find_all('tr'):
+                    if "Bestellnummer" in hc_row.find('td', {'class': 'objFormularBeschriftung'}).text.strip():
+                        hc_article_code = hc_row.find('td', {'class': 'objFormularInhalt1'}).text.strip()
+                        print('Category: {}, Product: {}, Fabric Code: {}, Article Code: {}'.format(category_title, product_title,fabric_code, hc_article_code))
+                        data.append([
+                            product_title,
+                            brand_name,
+                            hc_article_code,
+                            fabric_code,
+                            category_title,
+                        ])
+                break
 
 
 def loop_products_list(url):
