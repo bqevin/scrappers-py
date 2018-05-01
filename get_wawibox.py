@@ -38,6 +38,7 @@ payload = {
     form_username: 'orthoamstelveen',
     form_password: 'Ortho2020',
 }
+
 session = requests.Session()
 session.get(login_action)
 session.post(login_action, data=payload,
@@ -78,29 +79,25 @@ def single_product(url):
         if _title:
             product_title = _title.text.strip()
         #find the henry schein loop
-        try:
-            for competitor in parse_content(main_page_content.text).find('div', {'class': 'objKarteiInhalt'}).find_all('tr', {'class': 'objTabelle2Block'}):
-                text_data = competitor.find('td', {'class': 'objTabelle2BlockLinks'}).text.strip()
-                if "Henry Schein Dental Depot GmbH" in text_data:
-                    href_data = competitor.find('td', {'class': 'objTabelle2BlockRechts'})
-                    href_data = href_data.find('a')['href']
-                    hc_content = parse_content(session.get(clean_url(aera_online_str + href_data)).text)
-                    hc_content = hc_content.find('table', {'class': 'objFormular'})
-                    for hc_row in hc_content.find_all('tr'):
-                        if "Bestellnummer" in hc_row.find('td', {'class': 'objFormularBeschriftung'}).text.strip():
-                            hc_article_code = hc_row.find('td', {'class': 'objFormularInhalt1'}).text.strip()
-                            print('Category: {}, Product: {}, Fabric Code: {}, Article Code: {}'.format(category_title, product_title,fabric_code, hc_article_code))
-                            data.append([
-                                product_title,
-                                brand_name,
-                                hc_article_code,
-                                fabric_code,
-                                category_title,
-                            ])
-                    break
-        except Exception:
-            pass
-
+        for competitor in parse_content(main_page_content.text).find('div', {'class': 'objKarteiInhalt'}).find_all('tr', {'class': 'objTabelle2Block'}):
+            text_data = competitor.find('td', {'class': 'objTabelle2BlockLinks'}).text.strip()
+            if "Henry Schein Dental Depot GmbH" in text_data:
+                href_data = competitor.find('td', {'class': 'objTabelle2BlockRechts'})
+                href_data = href_data.find('a')['href']
+                hc_content = parse_content(session.get(clean_url(aera_online_str + href_data)).text)
+                hc_content = hc_content.find('table', {'class': 'objFormular'})
+                for hc_row in hc_content.find_all('tr'):
+                    if "Bestellnummer" in hc_row.find('td', {'class': 'objFormularBeschriftung'}).text.strip():
+                        hc_article_code = hc_row.find('td', {'class': 'objFormularInhalt1'}).text.strip()
+                        print('Category: {}, Product: {}, Fabric Code: {}, Article Code: {}'.format(category_title, product_title,fabric_code, hc_article_code))
+                        data.append([
+                            product_title,
+                            brand_name,
+                            hc_article_code,
+                            fabric_code,
+                            category_title,
+                        ])
+                break
 
 
 def loop_products_list(url):
